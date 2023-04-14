@@ -110,16 +110,65 @@ def create_one_child(father, mother, values_to_set):
     :return: (object) a child which is the combination of both parents
     """
     # Avoid having only the whole father or the whole mother
-    sudoku_size = father.size()
-    crossover_point = np.random.randint(1, sudoku_size - 1)
+    # sudoku_size = father.size()
+    # crossover_point_1 = np.random.randint(1, sudoku_size - 2)  # make sure there is at least one cell for the second point
+    # crossover_point_2 = np.random.randint(crossover_point_1 + 1, sudoku_size - 1)
 
-    child_grids = []
-    for i in range(sudoku_size):
-        if i < crossover_point:
-            child_grids.append(father.grids()[i])
-        else:
-            child_grids.append(mother.grids()[i])
-    return Sudoku(values_to_set).fill_with_grids(child_grids)
+    # # Swap the grids between the two points
+    # child_grids = []
+    # for i in range(sudoku_size):
+    #     if i < crossover_point_1:
+    #         child_grids.append(father.grids()[i])
+    #     elif i < crossover_point_2:
+    #         child_grids.append(mother.grids()[i])
+    #     else:
+    #         child_grids.append(father.grids()[i])
+    # return Sudoku(values_to_set).fill_with_grids(child_grids)
+    # Create an empty child Sudoku object
+    child_grids = [[None] * 9 for _ in range(9)]
+    child = Sudoku(values_to_set).fill_with_grids(child_grids)
+
+    # Create an array to keep track of the visited positions
+    visited = [[False] * 9 for _ in range(9)]
+
+    # Perform cycle crossover
+    for i in range(9):
+        for j in range(9):
+            # Skip visited positions
+            if visited[i][j]:
+                continue
+
+            # Start a new cycle
+            current_value = father.grids()[i][j]
+            cycle = [(i, j)]
+
+            # Follow the cycle
+            while True:
+                # Find the corresponding position in the mother Sudoku
+                row_mother, col_mother = None, None
+                for x in range(9):
+                    for y in range(9):
+                        if mother.grids()[x][y] == current_value:
+                            row_mother, col_mother = x, y
+                            break
+
+                # Check if the cycle is complete
+                if (row_mother, col_mother) == (i, j):
+                    break
+
+                # Add the corresponding position to the cycle
+                cycle.append((row_mother, col_mother))
+                visited[row_mother][col_mother] = True
+
+                # Move to the corresponding position in the father Sudoku
+                i, j = row_mother, col_mother
+                current_value = father.grids()[i][j]
+
+            # Set the values in the child Sudoku
+            for i, j in cycle:
+                child.set_grid_value(i, j, father.grids()[i][j])
+
+    return child
 
 
 def create_one_child_random_elements(father, mother, values_to_set):
@@ -144,16 +193,32 @@ def create_one_child_random_elements(father, mother, values_to_set):
     return Sudoku(values_to_set).fill_with_grids(child_grids)
 
 
+def mutate(self):
+# Choose a random block, row, and column
+    block_row, block_col = np.random.randint(3), np.random.randint(3)
+    row, col = np.random.randint(3) + block_row * 3, np.random.randint(3) + block_col * 3
+
+    # Choose two random positions within the block
+    pos1 = np.random.randint(3)
+    pos2 = np.random.randint(3)
+
+    # Swap the values at the selected positions within the block
+    temp = self._grids[block_row][block_col][pos1][col % 3]
+    self._grids[block_row][block_col][pos1][col % 3] = self._grids[block_row][block_col][pos2][col % 3]
+    self._grids[block_row][block_col][pos2][col % 3] = temp
+
+    # Reset the fitness score
+    self._fitness_score = None
+
+    # Return the mutated individual
+    return self
+
 def mutate_population(population, mutation_rate):
-    """
-    Randomly mutate some elements in the given population based on a given mutation rate
-    :param population: (array) the whole population, few elements chosen randomly will mutate
-    :param mutation_rate: (float) given mutation rate, it is a parameter that can be changed to act on the program
-    :return: (array) new population with some elements that went through mutation. It is the next generation to evaluate
-    """
     population_with_mutation = []
     for individual in population:
         if np.random.random() < mutation_rate:
-            individual = individual.swap_2_values()
+            individual = individual.mutate()
         population_with_mutation.append(individual)
-    return population_with_mutation
+    return population_with_mutation 
+
+

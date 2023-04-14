@@ -187,19 +187,11 @@ class Sudoku(object):
         return self._init_values
 
     def fitness(self):
-        """
-        The most important function of the program. Here we give a note to the candidate according to the values
-        Basically it is: how many figures are at the right place among the number of figures to find
-        'Right place' = the number of duplicate symbols in rows or columns. Fewer duplicates presumably means a better
-        solution
-        :return: (int) a score for this candidate, lower it is, better is the candidate
-        """
-        # Evaluate once per individual
         if self._fitness_score is None:
-            duplicates_counter = 0
+            unique_numbers_count = 0
             for i in range(self.size()):
-                duplicates_counter += tools.count_duplicates(self._rows[i]) + tools.count_duplicates(self._columns[i])
-            self._fitness_score = duplicates_counter
+                unique_numbers_count += len(set(self._rows[i])) + len(set(self._columns[i]))
+            self._fitness_score = unique_numbers_count
         return self._fitness_score
 
     def swap_2_values(self):
